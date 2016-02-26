@@ -12,7 +12,7 @@
 # Released under the MIT license -- https://opensource.org/licenses/MIT
 
 # Bail if something fails
-set -x
+set -e
 
 disable_puppet() {
   echo "Disabling Puppet"
