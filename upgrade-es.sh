@@ -63,12 +63,13 @@ upgrade_elasticsearch() {
             -o Dpkg::Options::='--force-unsafe-io' \
             install --fix-broken --auto-remove --yes elasticsearch
     fi
+    builtin hash systemctl &>/dev/null && sudo systemctl daemon-reload
 }
 
 start_elasticsearch() {
     echo -n "Starting elasticsearch"
     sudo service elasticsearch start
-    until curl -s 127.0.0.1:9200/_cluster/health?pretty; do
+    until curl -s 127.0.0.1:9200/_cat/health; do
         echo -n '.'
         sleep 1
     done
