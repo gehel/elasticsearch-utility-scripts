@@ -113,8 +113,12 @@ __BLOCK_COMMENT
 
 # apply https://gerrit.wikimedia.org/r/#/c/269100/ - Ship Elasticsearch logs to logstash
 sudo puppet agent --enable
-sudo puppet agent --test --verbose
 
+# Deactivate error checking as puppet should return "2" to indicate that
+# changes have occured. This is really ugly, I'll do better for next time.
+set +e
+sudo puppet agent --test --verbose
+set -e
 
 start_elasticsearch
 enable_shard_allocation
