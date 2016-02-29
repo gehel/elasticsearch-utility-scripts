@@ -21,11 +21,7 @@ disable_puppet() {
 
 disable_shard_allocation() {
     echo "Stopping shard reallocation"
-    curl -s -XPUT 127.0.0.1:9200/_cluster/settings?pretty -d '{
-        "transient" : {
-            "cluster.routing.allocation.enable": "primaries"
-        }
-    }'
+    es-tool stop-replication
 }
 
 flush_markers() {
@@ -63,7 +59,9 @@ upgrade_elasticsearch() {
             -o Dpkg::Options::='--force-unsafe-io' \
             install --fix-broken --auto-remove --yes elasticsearch
     fi
-    builtin hash systemctl &>/dev/null && sudo systemctl daemon-reload
+    if builtin hash systemctl &>/dev/null; then
+        sudo systemctl daemon-reload
+    fi
 }
 
 start_elasticsearch() {
@@ -77,18 +75,14 @@ start_elasticsearch() {
 }
 
 enable_shard_allocation() {
-    curl -s -XPUT 127.0.0.1:9200/_cluster/settings?pretty -d '{
-        "transient" : {
-            "cluster.routing.allocation.enable": "all"
-        }
-    }'
+   es-tool start-replication
 }
 
 wait_for_cluster_recovery() {
     local health="/tmp/$(basename $0).$$.tmp"
     until curl -s 127.0.0.1:9200/_cat/health | tee "$health" | grep green; do
         cat "$health"
-        sleep 1
+        sleep 10
     done
 }
 
@@ -116,6 +110,11 @@ sudo iptables -A LOGGING -m limit --limit 2/min -j LOG --log-prefix "iptables-dr
 sudo iptables -A LOGGING -j DROP
 __BLOCK_COMMENT
 # -- END optional steps for this particular update --
+
+# apply https://gerrit.wikimedia.org/r/#/c/269100/ - Ship Elasticsearch logs to logstash
+sudo puppet agent --enable
+sudo puppet agent --test --verbose
+
 
 start_elasticsearch
 enable_shard_allocation
